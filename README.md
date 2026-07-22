@@ -22,11 +22,11 @@ The full writeup (topology design, threshold tuning, simulation results, the "mi
 The project went through three iterations, kept as separate folders since each one corresponds to a stage described in the report:
 
 ```
-PrimaParte/     first working version: monitor + block, no automatic unblock
-SecondaParte/   same logic, refactored to share helpers via utils.py
-Definitivo/     final version: adds a dedicated unlocker thread, thread-safe
-                access to blocked_ports (threading.Lock), and richer
-                per-port blocked-state tracking
+V1/     first working version: monitor + block, no automatic unblock
+V2/     same logic, refactored to share helpers via utils.py
+Final/  final version: adds a dedicated unlocker thread, thread-safe
+        access to blocked_ports (threading.Lock), and richer
+        per-port blocked-state tracking
 ```
 
 Each of the three folders is self-contained and has the same layout:
@@ -34,13 +34,13 @@ Each of the three folders is self-contained and has the same layout:
 ```
 controller.py   Ryu app: L2 switch + throughput monitoring + DoS mitigation
 topology.py     Mininet topology (4 hosts, 4 switches) and CLI entry point
-utils.py        helper functions shared by controller.py (Definitivo, SecondaParte only)
+utils.py        helper functions shared by controller.py (Final, V2 only)
 *.txt           log files the controller appends to at runtime (not versioned, see .gitignore)
 ```
 
 `NCIs_Altiero_Caucci_Cecere.pdf` at the repo root is the full report.
 
-## How it works (Definitivo, the final version)
+## How it works (Final, the final version)
 
 - `_state_change_handler` registers switches as they connect and, on the first one, spawns two background greenlets: `_monitor` and `_unlocker`.
 - `_monitor` polls `OFPPortStatsRequest` on all registered switches every 5s, computes throughput in `calculate_stats`, and calls `check_threshold_out` / `check_threshold_in` to decide whether to raise an alarm and block a port.
@@ -49,7 +49,7 @@ utils.py        helper functions shared by controller.py (Definitivo, SecondaPar
 - `_unlocker` runs independently (15s initial delay, then a 10s poll loop via `search_blocked_port`), and for each blocked port calls `check_single_port`, which re-samples RX throughput once per second for up to 40s: if it ever spikes back above `threshold_in` the port stays locked and the check exits immediately, but if it stays below threshold for 30 consecutive seconds `unlock_port` removes the drop rule (an `OFPFlowMod` with `OFPFC_DELETE`) and clears the port's blocked-state entry.
 - `mac_to_port` / ARP snooping in `_packet_in_handler` build the switch/host topology used to decide which port belongs to which host; in the extended topology (Sec. 3.1 of the report) this was generalized from "one host per switch port" to a dictionary keyed by IP, since a switch can face several hosts at once (e.g. H1 and H4 both behind S1).
 
-`PrimaParte` and `SecondaParte` implement the same idea without the automatic unlock step (blocked ports stay blocked until the controller is restarted).
+`V1` and `V2` implement the same idea without the automatic unlock step (blocked ports stay blocked until the controller is restarted).
 
 ## Report highlights (from `NCIs_Altiero_Caucci_Cecere.pdf`)
 
@@ -70,7 +70,7 @@ utils.py        helper functions shared by controller.py (Definitivo, SecondaPar
 
 ### Running a simulation
 
-From inside one of the three folders (`Definitivo` is the one to use unless you specifically want to reproduce an earlier stage from the report):
+From inside one of the three folders (`Final` is the one to use unless you specifically want to reproduce an earlier stage from the report):
 
 ```bash
 # terminal 1: start the Ryu controller
