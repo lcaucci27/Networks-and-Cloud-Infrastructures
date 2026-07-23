@@ -3,11 +3,15 @@ __pycache__/
 *.pyc
 *.pyo
 
+.venv/
+venv/
+
 # runtime logs written by the controller (regenerated on every run)
 Datapaths.txt
 BlockedPort.txt
 host_ports.txt
 switch_ports.txt
+*.log
 
 .DS_Store
 __MACOSX
