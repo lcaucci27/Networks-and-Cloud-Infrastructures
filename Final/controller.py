@@ -113,7 +113,7 @@ class SimpleSwitch13(app_manager.RyuApp):
                 self.unlock_port(switch_id, port_no)
                 return True
 
-            time.sleep(1)
+            hub.sleep(1)  # this runs inside a hub greenlet, never block it with a raw time.sleep
 
 
     def _request_ports_stats(self, datapath):
@@ -136,7 +136,7 @@ class SimpleSwitch13(app_manager.RyuApp):
 
         for stat in body:
             port_no = stat.port_no
-            if port_no != (ofproto_v1_3.OFPP_CONTROLLER + 1):
+            if port_no != ofproto_v1_3.OFPP_LOCAL:  # OVS always reports this pseudo-port too, skip it, it's not a real link
                 tx_bytes = stat.tx_bytes
                 rx_bytes = stat.rx_bytes
                 throughput_tx, throughput_rx = self.calculate_stats(switch_id, port_no, tx_bytes, rx_bytes)

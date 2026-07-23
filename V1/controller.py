@@ -42,7 +42,7 @@ class SimpleSwitch13(app_manager.RyuApp):
                 self.datapaths[datapath.id] = datapath
 
                 with open("Datapaths.txt", 'a') as file:
-                    file.write(f"f'Switch registry updated: {datapath.id}\n")
+                    file.write(f"Switch registered: {datapath.id}\n")
 
                 if self.monitor_thread is None:
                     self.monitor_thread = hub.spawn(self._monitor)
@@ -87,7 +87,7 @@ class SimpleSwitch13(app_manager.RyuApp):
 
         for stat in body:
             port_no = stat.port_no
-            if port_no != (ofproto_v1_3.OFPP_CONTROLLER + 1):
+            if port_no != ofproto_v1_3.OFPP_LOCAL:  # OVS always reports this pseudo-port too, skip it, it's not a real link
                 tx_bytes = stat.tx_bytes
                 rx_bytes = stat.rx_bytes
                 throughput_tx, throughput_rx = self.calculate_stats(switch_id, port_no, tx_bytes, rx_bytes)
@@ -151,6 +151,7 @@ class SimpleSwitch13(app_manager.RyuApp):
                         self.logger.info("ALERT TRIGGERED Port %s on Switch %s exceeded the outgoing threshold!",
                                             port_no, switch_id)
                         return switch_id
+        return None
 
 
     def check_threshold_in(self, switch_id):
@@ -182,19 +183,18 @@ class SimpleSwitch13(app_manager.RyuApp):
         else:
             port = self.switch_ports[switch_id].get('port')
 
-            for port_info in self.stats_elaborate[switch_id].values():
-                if port == self.switch_ports[switch_id].get('port') and self.switch_ports[switch_id].get('type') == arp.ARP_REQUEST:
-                    self._initialize_blocked_ports(switch_id, port)
+            if self.switch_ports[switch_id].get('type') == arp.ARP_REQUEST:
+                self._initialize_blocked_ports(switch_id, port)
 
-                    for _ in range(5):  # sample a few times before deciding, one reading can be a spike
-                        throughput_in = port_info['rx']
-                        hub.sleep(0.5)
+                for _ in range(5):  # sample a few times before deciding, one reading can be a spike
+                    throughput_in = self.stats_elaborate[switch_id][port]['rx']
+                    hub.sleep(0.5)
 
-                        if throughput_in > self.threshold_in and not self.blocked_ports[switch_id][port]:
-                            self.logger.info(f"\nPORTA [{port}] DELLO SWITCH [{switch_id}] BLOCCATA - RX: {throughput_in}.\n")
-                            self.block_port(switch_id=switch_id, port_to_block=port, rx=throughput_in)
-                            self.alarm = False
-                            return port
+                    if throughput_in > self.threshold_in and not self.blocked_ports[switch_id][port]:
+                        self.logger.info(f"\nPORTA [{port}] DELLO SWITCH [{switch_id}] BLOCCATA - RX: {throughput_in}.\n")
+                        self.block_port(switch_id=switch_id, port_to_block=port, rx=throughput_in)
+                        self.alarm = False
+                        return port
 
         self.alarm = False
 

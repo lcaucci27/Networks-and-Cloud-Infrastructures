@@ -88,7 +88,7 @@ class SimpleSwitch13(app_manager.RyuApp):
 
         for stat in body:
             port_no = stat.port_no
-            if port_no != (ofproto_v1_3.OFPP_CONTROLLER + 1):
+            if port_no != ofproto_v1_3.OFPP_LOCAL:  # OVS always reports this pseudo-port too, skip it, it's not a real link
                 tx_bytes = stat.tx_bytes
                 rx_bytes = stat.rx_bytes
                 throughput_tx, throughput_rx = self.calculate_stats(switch_id, port_no, tx_bytes, rx_bytes)
@@ -185,7 +185,7 @@ class SimpleSwitch13(app_manager.RyuApp):
                     utils._initialize_blocked_ports(self.blocked_ports, switch_id, port)
 
                     for _ in range(5):  # sample a few times before deciding, one reading can be a spike
-                        throughput_in = port_info['rx']
+                        throughput_in = self.stats_elaborate[switch_id][port]['rx']
                         hub.sleep(0.5)
 
                         if throughput_in > self.threshold_in and not self.blocked_ports[switch_id][port]:
