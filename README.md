@@ -1,6 +1,6 @@
 # Networks and Cloud Infrastructures, Designing a Monitoring and Mitigation System for DoS Attacks
 
-Project work for the Networks and Cloud Infrastructures course (MSc in Computer Engineering, University of Naples Federico II, prof. Ventre, academic year 2023/2024, exam sustained on 12/09/2024).
+Project work for the Networks and Cloud Infrastructures course (MSc in Computer Engineering, University of Naples Federico II, prof. Giorgio Ventre, academic year 2023/2024, exam sustained on 12/09/2024, grade 30/30).
 
 Authors: Francesco Altiero ([@checcoalt](https://github.com/checcoalt)), Luigi Caucci ([@lcaucci27](https://github.com/lcaucci27)), Simone Cecere ([@simocecere](https://github.com/simocecere)).
 
